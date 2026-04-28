@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>퍼플스 인트라넷 아키텍처 분석</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:false,theme:'default',flowchart:{nodeSpacing:20,rankSpacing:30,curve:'basis'},themeVariables:{primaryColor:'#eef2ff',primaryTextColor:'#1e293b',lineColor:'#6366f1',secondaryColor:'#f8fafc',tertiaryColor:'#f1f5f9',fontSize:'11px'}});</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:#f8fafc;color:#1e293b;line-height:1.7}
+.ct{max-width:1200px;margin:0 auto;padding:32px 24px}
+.header{background:#fff;border-bottom:1px solid #e2e8f0;padding:20px 0;margin-bottom:32px}
+.header .inner{max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;padding:0 24px}
+.logo{font-size:22px;font-weight:800;color:#4f46e5}
+.logo span{color:#1e293b}
+.header-sub{color:#64748b;font-size:13px}
+.page-bar{display:flex;align-items:center;gap:12px;margin-bottom:28px}
+.back-btn{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;color:#4f46e5;cursor:pointer;transition:all .2s}
+.back-btn:hover{background:#eef2ff;border-color:#4f46e5}
+.page-title{font-size:22px;font-weight:800;color:#1e293b}
+.home-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
+.home-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:28px 24px;cursor:pointer;transition:all .25s;position:relative;overflow:hidden}
+.home-card:hover{border-color:#818cf8;box-shadow:0 8px 30px rgba(99,102,241,.12);transform:translateY(-3px)}
+.home-card .icon{font-size:36px;margin-bottom:12px}
+.home-card .name{font-size:16px;font-weight:700;color:#1e293b;margin-bottom:6px}
+.home-card .desc{font-size:13px;color:#64748b;line-height:1.5}
+.home-card .arrow{position:absolute;right:20px;top:50%;transform:translateY(-50%);font-size:20px;color:#cbd5e1;transition:color .2s}
+.home-card:hover .arrow{color:#6366f1}
+.page{display:none}.page.active{display:block}
+h2{font-size:18px;font-weight:700;color:#1e293b;margin:28px 0 14px;padding-bottom:8px;border-bottom:2px solid #eef2ff}
+h3{font-size:14px;font-weight:700;color:#4f46e5;margin:14px 0 8px}
+.c{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:16px}
+.g{display:grid;grid-template-columns:1fr;gap:16px}
+.b{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.b-p{background:#eef2ff;color:#4f46e5}.b-g{background:#ecfdf5;color:#059669}
+.b-y{background:#fffbeb;color:#b45309}.b-r{background:#fef2f2;color:#dc2626}
+.b-b{background:#eff6ff;color:#2563eb}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}
+th{background:#f1f5f9;color:#475569;padding:10px 12px;text-align:left;font-weight:600;border-bottom:2px solid #e2e8f0}
+td{padding:10px 12px;border-bottom:1px solid #f1f5f9;color:#334155}
+tr:hover td{background:#f8fafc}
+.ly{display:flex;gap:12px;margin:10px 0;flex-wrap:wrap}
+.li{flex:1;min-width:180px;padding:14px;border-radius:10px;text-align:center;font-size:13px;font-weight:600;color:#fff}
+.l1{background:#4f46e5}.l2{background:#2563eb}.l3{background:#059669}.l4{background:#d97706}
+.sev-critical{border-left:3px solid #dc2626}.sev-high{border-left:3px solid #d97706}.sev-medium{border-left:3px solid #2563eb}
+.flow{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin:12px 0}
+.flow-step{background:#eef2ff;color:#4f46e5;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;border:1px solid #c7d2fe}
+.flow-arrow{color:#6366f1;font-size:18px;font-weight:700}
+ul{padding-left:18px;margin:6px 0}li{margin:3px 0;font-size:13px;color:#475569}
+.footer{text-align:center;padding:40px 0;color:#94a3b8;font-size:12px;border-top:1px solid #e2e8f0;margin-top:40px}
+/* Flowchart full-width */
+.fc-wrap{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:24px;margin-bottom:20px;overflow:auto;position:relative}
+.fc-wrap .mermaid{min-width:1200px;transform-origin:top left;transition:transform .3s ease}
+.fc-section-title{font-size:16px;font-weight:700;color:#1e293b;margin:32px 0 16px;padding:10px 16px;background:#eef2ff;border-radius:8px;border-left:4px solid #4f46e5}
+.fc-zoom{position:sticky;top:0;right:0;z-index:10;display:flex;gap:4px;justify-content:flex-end;margin-bottom:8px}
+.fc-zoom button{width:32px;height:32px;border:1px solid #e2e8f0;background:#fff;border-radius:6px;font-size:16px;font-weight:700;color:#4f46e5;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center}
+.fc-zoom button:hover{background:#eef2ff;border-color:#4f46e5}
+.fc-zoom span{font-size:12px;color:#64748b;line-height:32px;min-width:40px;text-align:center}
+</style>
+</head>
+<body>
+<script src="analysis-data.js"></script>
+<div class="header"><div class="inner">
+<div class="logo">🏗️ <span>퍼플스 인트라넷</span> 아키텍처 분석</div>
+<div class="header-sub">2026-04-24 · 보고용 문서</div>
+</div></div>
+<div class="ct">
+
+<!-- HOME -->
+<div class="page active" id="page-home">
+<div class="home-grid" id="home-grid"></div>
+</div>
+
+<!-- 문제점 + 개선비교 통합 -->
+<div class="page" id="page-analysis">
+<div class="page-bar"><button class="back-btn" onclick="go('home')">← 목록</button><span class="page-title">🔴 현황 분석 및 개선 비교</span></div>
+<h2>현재 인트라넷 문제점</h2>
+<div class="c" style="overflow-x:auto"><table>
+<thead><tr><th style="width:30px">No</th><th style="width:100px">분류</th><th style="width:60px">심각도</th><th style="width:180px">문제점</th><th>상세 설명</th></tr></thead>
+<tbody id="problems-body"></tbody>
+</table></div>
+<h2 style="margin-top:40px">✨ AS-IS → TO-BE 핵심 개선 비교</h2>
+<div class="c" style="overflow-x:auto"><table>
+<thead><tr><th style="width:30px">No</th><th style="width:100px">개선 영역</th><th style="width:80px">담당</th><th style="width:70px">우선순위</th><th>AS-IS (현재)</th><th>TO-BE (개선)</th><th>기대효과</th></tr></thead>
+<tbody id="improve-body"></tbody>
+</table></div>
+</div>
+
+<!-- 아키텍처 -->
+<div class="page" id="page-arch">
+<div class="page-bar"><button class="back-btn" onclick="go('home')">← 목록</button><span class="page-title">📊 시스템 아키텍처 4계층</span></div>
+
+<div style="max-width:960px;margin:0 auto">
+<!-- Layer 1: Presentation -->
+<div style="background:#eef2ff;border:2px solid #818cf8;border-radius:14px;padding:20px;margin-bottom:12px">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+<span style="background:#4f46e5;color:#fff;padding:4px 12px;border-radius:6px;font-size:12px;font-weight:700">Layer 1</span>
+<span style="font-size:16px;font-weight:700;color:#312e81">Presentation (화면 계층)</span>
+<span style="font-size:12px;color:#6366f1;margin-left:auto">사용자가 직접 보는 화면</span>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
+<div style="background:#fff;border:1px solid #c7d2fe;border-radius:8px;padding:12px;text-align:center;font-size:12px"><div style="font-size:20px;margin-bottom:4px">📊</div><strong>대시보드</strong><div style="color:#64748b;font-size:11px">종합 현황판</div></div>
+<div style="background:#fff;border:1px solid #c7d2fe;border-radius:8px;padding:12px;text-align:center;font-size:12px"><div style="font-size:20px;margin-bottom:4px">👤</div><strong>준회원 관리</strong><div style="color:#64748b;font-size:11px">목록/상세/전환</div></div>
+<div style="background:#fff;border:1px solid #c7d2fe;border-radius:8px;padding:12px;text-align:center;font-size:12px"><div style="font-size:20px;margin-bottom:4px">👥</div><strong>정회원 관리</strong><div style="color:#64748b;font-size:11px">원페이지 뷰</div></div>
+<div style="background:#fff;border:1px solid #c7d2fe;border-radius:8px;padding:12px;text-align:center;font-size:12px"><div style="font-size:20px;margin-bottom:4px">💑</div><strong>매칭 관리</strong><div style="color:#64748b;font-size:11px">검색/교제/안심번호</div></div>
+<div style="background:#fff;border:1px solid #c7d2fe;border-radius:8px;padding:12px;text-align:center;font-size:12px"><div style="font-size:20px;margin-bottom:4px">📄</div><strong>인증 관리</strong><div style="color:#64748b;font-size:11px">서류인증/자동화</div></div>
+<div style="background:#fff;border:1px solid #c7d2fe;border-radius:8px;padding:12px;text-align:center;font-size:12px"><div style="font-size:20px;margin-bottom:4px">📈</div><strong>실적·통계</strong><div style="color:#64748b;font-size:11px">리포트/랭킹</div></div>
+</div>
+</div>
+<!-- Arrow -->
+<div style="text-align:center;font-size:24px;color:#94a3b8;margin:4px 0">▼ API 호출 ▼</div>
+
+<!-- Layer 2: Business Logic -->
+<div style="background:#eff6ff;border:2px solid #60a5fa;border-radius:14px;padding:20px;margin-bottom:12px">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+<span style="background:#2563eb;color:#fff;padding:4px 12px;border-radius:6px;font-size:12px;font-weight:700">Layer 2</span>
+<span style="font-size:16px;font-weight:700;color:#1e3a5f">Business Logic (비즈니스 로직)</span>
+<span style="font-size:12px;color:#3b82f6;margin-left:auto">핵심 업무 규칙 처리</span>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">
+<div style="background:#fff;border:1px solid #93c5fd;border-radius:8px;padding:12px;text-align:center;font-size:12px"><div style="font-size:20px;margin-bottom:4px">⚙️</div><strong>룰 엔진</strong><div style="color:#64748b;font-size:11px">자동 상태 전환<br>임계값 트리거</div></div>
+<div style="background:#fff;border:1px solid #93c5fd;border-radius:8px;padding:12px;text-align:center;font-size:12px"><div style="font-size:20px;margin-bottom:4px">📞</div><strong>컨택 관리</strong><div style="color:#64748b;font-size:11px">부재중 5회 이관<br>보류 30일 만료</div></div>
+<div style="background:#fff;border:1px solid #93c5fd;border-radius:8px;padding:12px;text-align:center;font-size:12px"><div style="font-size:20px;margin-bottom:4px">💰</div><strong>결제/계약</strong><div style="color:#64748b;font-size:11px">가입비 산정<br>계약일 Lock</div></div>
+<div style="background:#fff;border:1px solid #93c5fd;border-radius:8px;padding:12px;text-align:center;font-size:12px"><div style="font-size:20px;margin-bottom:4px">🔀</div><strong>DB 분배</strong><div style="color:#64748b;font-size:11px">라운드로빈<br>중복 자동 수거</div></div>
+<div style="background:#fff;border:1px solid #93c5fd;border-radius:8px;padding:12px;text-align:center;font-size:12px"><div style="font-size:20px;margin-bottom:4px">🛡️</div><strong>CS/환불</strong><div style="color:#64748b;font-size:11px">위약금 자동 산정<br>환불 파이프라인</div></div>
+</div>
+</div>
+<!-- Arrow -->
+<div style="text-align:center;font-size:24px;color:#94a3b8;margin:4px 0">▼ CRUD ▼</div>
+
+<!-- Layer 3: Data Layer -->
+<div style="background:#ecfdf5;border:2px solid #6ee7b7;border-radius:14px;padding:20px;margin-bottom:12px">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+<span style="background:#059669;color:#fff;padding:4px 12px;border-radius:6px;font-size:12px;font-weight:700">Layer 3</span>
+<span style="font-size:16px;font-weight:700;color:#064e3b">Data Layer (데이터 계층)</span>
+<span style="font-size:12px;color:#10b981;margin-left:auto">모든 데이터 저장/관리</span>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
+<div style="background:#fff;border:1px solid #a7f3d0;border-radius:8px;padding:12px;text-align:center;font-size:12px"><div style="font-size:20px;margin-bottom:4px">🗄️</div><strong>회원 DB</strong><div style="color:#64748b;font-size:11px">준회원/정회원<br>마스터 테이블</div></div>
+<div style="background:#fff;border:1px solid #a7f3d0;border-radius:8px;padding:12px;text-align:center;font-size:12px"><div style="font-size:20px;margin-bottom:4px">📋</div><strong>계약/결제 DB</strong><div style="color:#64748b;font-size:11px">계약·결제·미수금<br>이력 저장</div></div>
+<div style="background:#fff;border:1px solid #a7f3d0;border-radius:8px;padding:12px;text-align:center;font-size:12px"><div style="font-size:20px;margin-bottom:4px">💕</div><strong>매칭 DB</strong><div style="color:#64748b;font-size:11px">매칭 이력·교제<br>안심번호 매핑</div></div>
+<div style="background:#fff;border:1px solid #a7f3d0;border-radius:8px;padding:12px;text-align:center;font-size:12px"><div style="font-size:20px;margin-bottom:4px">📄</div><strong>인증서류 저장소</strong><div style="color:#64748b;font-size:11px">PDF 원본<br>S3/NAS</div></div>
+<div style="background:#fff;border:1px solid #a7f3d0;border-radius:8px;padding:12px;text-align:center;font-size:12px"><div style="font-size:20px;margin-bottom:4px">📝</div><strong>이력/로그 DB</strong><div style="color:#64748b;font-size:11px">상담·변경·분배<br>감사 추적</div></div>
+</div>
+</div>
+<!-- Arrow -->
+<div style="text-align:center;font-size:24px;color:#94a3b8;margin:4px 0">▼ 외부 연동 ▼</div>
+
+<!-- Layer 4: Integration -->
+<div style="background:#fffbeb;border:2px solid #fbbf24;border-radius:14px;padding:20px">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+<span style="background:#d97706;color:#fff;padding:4px 12px;border-radius:6px;font-size:12px;font-weight:700">Layer 4</span>
+<span style="font-size:16px;font-weight:700;color:#78350f">Integration (외부 연동)</span>
+<span style="font-size:12px;color:#d97706;margin-left:auto">외부 시스템 API 연결</span>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
+<div style="background:#fff;border:1px solid #fde68a;border-radius:8px;padding:12px;text-align:center;font-size:12px"><div style="font-size:20px;margin-bottom:4px">📱</div><strong>스크래핑 API</strong><div style="color:#64748b;font-size:11px">Codef/바로빌<br>공공서류 자동발급</div></div>
+<div style="background:#fff;border:1px solid #fde68a;border-radius:8px;padding:12px;text-align:center;font-size:12px"><div style="font-size:20px;margin-bottom:4px">📞</div><strong>안심번호 API</strong><div style="color:#64748b;font-size:11px">KT 050<br>발급/회수 자동화</div></div>
+<div style="background:#fff;border:1px solid #fde68a;border-radius:8px;padding:12px;text-align:center;font-size:12px"><div style="font-size:20px;margin-bottom:4px">📥</div><strong>웹훅 수신</strong><div style="color:#64748b;font-size:11px">메타/카카오/네이버<br>DB 자동 연동</div></div>
+<div style="background:#fff;border:1px solid #fde68a;border-radius:8px;padding:12px;text-align:center;font-size:12px"><div style="font-size:20px;margin-bottom:4px">🔔</div><strong>알림톡/SMS</strong><div style="color:#64748b;font-size:11px">카카오 알림톡<br>자동 발송</div></div>
+<div style="background:#fff;border:1px solid #fde68a;border-radius:8px;padding:12px;text-align:center;font-size:12px"><div style="font-size:20px;margin-bottom:4px">✍️</div><strong>전자서명 API</strong><div style="color:#64748b;font-size:11px">모두싸인/카카오<br>계약·탈회 서명</div></div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- 플로우차트 -->
+<div class="page" id="page-flowcharts">
+<div class="page-bar"><button class="back-btn" onclick="go('home')">← 목록</button><span class="page-title">🔀 전체 시스템 플로우차트</span></div>
+
+<div class="fc-section-title">🗺️ 전체 업무 플로우 (End-to-End)</div>
+<div class="fc-wrap"><div class="fc-zoom"><button onclick="fcZoom(this,-1)">−</button><span>100%</span><button onclick="fcZoom(this,1)">+</button><button onclick="fcZoom(this,0)">↺</button></div><div id="fc-main" class="mermaid" style="min-width:2000px"></div></div>
+
+<div class="fc-section-title">📌 기능별 상세 플로우차트</div>
+<div class="fc-wrap"><div class="fc-zoom"><button onclick="fcZoom(this,-1)">−</button><span>100%</span><button onclick="fcZoom(this,1)">+</button><button onclick="fcZoom(this,0)">↺</button></div><h3>👤 회원 가입 프로세스</h3><div id="fc-membership" class="mermaid"></div></div>
+<div class="fc-wrap"><div class="fc-zoom"><button onclick="fcZoom(this,-1)">−</button><span>100%</span><button onclick="fcZoom(this,1)">+</button><button onclick="fcZoom(this,0)">↺</button></div><h3>💰 결제/계약 프로세스</h3><div id="fc-payment" class="mermaid"></div></div>
+<div class="fc-wrap"><div class="fc-zoom"><button onclick="fcZoom(this,-1)">−</button><span>100%</span><button onclick="fcZoom(this,1)">+</button><button onclick="fcZoom(this,0)">↺</button></div><h3>📄 서류 인증 프로세스</h3><div id="fc-cert" class="mermaid"></div></div>
+<div class="fc-wrap"><div class="fc-zoom"><button onclick="fcZoom(this,-1)">−</button><span>100%</span><button onclick="fcZoom(this,1)">+</button><button onclick="fcZoom(this,0)">↺</button></div><h3>💑 매칭 프로세스</h3><div id="fc-matching" class="mermaid"></div></div>
+<div class="fc-wrap"><div class="fc-zoom"><button onclick="fcZoom(this,-1)">−</button><span>100%</span><button onclick="fcZoom(this,1)">+</button><button onclick="fcZoom(this,0)">↺</button></div><h3>🛡️ CS/클레임 프로세스</h3><div id="fc-claim" class="mermaid"></div></div>
+<div class="fc-wrap"><div class="fc-zoom"><button onclick="fcZoom(this,-1)">−</button><span>100%</span><button onclick="fcZoom(this,1)">+</button><button onclick="fcZoom(this,0)">↺</button></div><h3>📥 회원분배 프로세스</h3><div id="fc-distribute" class="mermaid"></div></div>
+<div class="fc-wrap"><div class="fc-zoom"><button onclick="fcZoom(this,-1)">−</button><span>100%</span><button onclick="fcZoom(this,1)">+</button><button onclick="fcZoom(this,0)">↺</button></div><h3>👔 인사관리 프로세스</h3><div id="fc-hr" class="mermaid"></div></div>
+<div class="fc-wrap"><div class="fc-zoom"><button onclick="fcZoom(this,-1)">−</button><span>100%</span><button onclick="fcZoom(this,1)">+</button><button onclick="fcZoom(this,0)">↺</button></div><h3>📈 실적·통계 프로세스</h3><div id="fc-stats" class="mermaid"></div></div>
+
+<div class="fc-section-title">🔄 회원 상태별 라이프사이클</div>
+<div class="fc-wrap"><div class="fc-zoom"><button onclick="fcZoom(this,-1)">−</button><span>100%</span><button onclick="fcZoom(this,1)">+</button><button onclick="fcZoom(this,0)">↺</button></div><h3>👤 준회원 상태 전환 주기 (15개)</h3><div id="fc-status-assoc" class="mermaid" style="min-width:900px"></div></div>
+<div class="fc-wrap"><div class="fc-zoom"><button onclick="fcZoom(this,-1)">−</button><span>100%</span><button onclick="fcZoom(this,1)">+</button><button onclick="fcZoom(this,0)">↺</button></div><h3>👥 정회원 상태 전환 주기 (21개)</h3><div id="fc-status-regular" class="mermaid" style="min-width:1000px"></div></div>
+</div>
+
+<!-- 메뉴구조도 -->
+<div class="page" id="page-menu-structure">
+<div class="page-bar"><button class="back-btn" onclick="go('home')">← 목록</button><span class="page-title">📋 메뉴구조도 (Depth 계층)</span></div>
+
+<div class="fc-section-title">🗂️ 조직도형 메뉴 트리</div>
+<div class="fc-wrap"><div class="fc-zoom"><button onclick="fcZoom(this,-1)">−</button><span>100%</span><button onclick="fcZoom(this,1)">+</button><button onclick="fcZoom(this,0)">↺</button></div><div id="fc-menu-tree" class="mermaid" style="min-width:1200px"></div></div>
+
+<div class="fc-section-title" style="margin-top:24px">📊 상세 메뉴 테이블</div>
+<div class="c" style="overflow-x:auto"><table>
+<thead><tr><th style="width:80px">코드</th><th style="width:140px">2 Depth (중메뉴)</th><th style="width:180px">3 Depth (화면/탭)</th><th>4 Depth (상세 기능 및 팝업)</th></tr></thead>
+<tbody id="structure-body"></tbody>
+</table></div>
+</div>
+
+<!-- 권한 매트릭스 -->
+<div class="page" id="page-permissions">
+<div class="page-bar"><button class="back-btn" onclick="go('home')">← 목록</button><span class="page-title">🔐 역할별 권한 매트릭스</span></div>
+<p style="font-size:12px;color:#64748b;margin-bottom:8px">● 전체 권한 &nbsp;&nbsp; △ 제한적 권한 &nbsp;&nbsp; ○ 조회만 &nbsp;&nbsp; ✕ 접근 불가</p>
+<div class="c" style="overflow-x:auto"><table>
+<thead id="perm-head"></thead>
+<tbody id="perm-body"></tbody>
+</table></div>
+</div>
+
+<!-- 5대 API -->
+<div class="page" id="page-apis">
+<div class="page-bar"><button class="back-btn" onclick="go('home')">← 목록</button><span class="page-title">🔗 5대 핵심 API 연동 전략</span></div>
+<p style="font-size:13px;color:#64748b;margin-bottom:16px"><strong style="color:#4f46e5">룰 엔진 기반 자동화</strong> · <strong style="color:#4f46e5">개인정보 보안</strong> · <strong style="color:#4f46e5">데이터 일원화</strong></p>
+<div id="apis-area"></div>
+</div>
+
+<!-- 자동화 규칙 및 알림 -->
+<div class="page" id="page-rules">
+<div class="page-bar"><button class="back-btn" onclick="go('home')">← 목록</button><span class="page-title">⚙️ 자동화 규칙 및 알림 명세</span></div>
+<p style="font-size:13px;color:#64748b;margin-bottom:16px">조건 충족 시 <strong style="color:#4f46e5">상태 변경 + 업무 처리 + 알림 발송</strong>이 자동으로 실행됩니다.</p>
+
+<h2>📡 알림 채널</h2>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:24px">
+<div class="c" style="text-align:center;padding:16px"><div style="font-size:28px;margin-bottom:6px">💬</div><strong>카카오 알림톡</strong><div style="font-size:12px;color:#64748b;margin-top:4px">미팅안내·서류요청·매칭결과<br>교제촉구·탈회안내</div></div>
+<div class="c" style="text-align:center;padding:16px"><div style="font-size:28px;margin-bottom:6px">📱</div><strong>SMS</strong><div style="font-size:12px;color:#64748b;margin-top:4px">알림톡 수신 실패 시<br>자동 대체 발송</div></div>
+<div class="c" style="text-align:center;padding:16px"><div style="font-size:28px;margin-bottom:6px">🔔</div><strong>인트라넷 알림</strong><div style="font-size:12px;color:#64748b;margin-top:4px">매니저 대시보드<br>실시간 팝업 알림</div></div>
+<div class="c" style="text-align:center;padding:16px"><div style="font-size:28px;margin-bottom:6px">📧</div><strong>이메일</strong><div style="font-size:12px;color:#64748b;margin-top:4px">경영진 주간 리포트<br>급여 명세서 발송</div></div>
+</div>
+
+<h2>📋 자동화 규칙 상세</h2>
+<div class="c" style="overflow-x:auto"><table>
+<thead><tr><th style="width:60px">규칙 ID</th><th style="width:80px">도메인</th><th style="width:60px">우선순위</th><th>트리거 조건 (IF)</th><th>자동 실행 (THEN)</th><th>알림 채널·대상</th><th style="width:70px">메뉴코드</th></tr></thead>
+<tbody id="rules-body"></tbody>
+</table></div>
+</div>
+
+<!-- 정책 설계서 -->
+<div class="page" id="page-policy">
+<div class="page-bar"><button class="back-btn" onclick="go('home')">← 목록</button><span class="page-title">📜 정책 설계서 (개인정보 보안 및 DB 관리)</span></div>
+<p style="font-size:13px;color:#64748b;margin-bottom:20px">개인정보보호법 및 결혼중개업법 준수 · 모든 개발자와 운영진이 즉시 이행해야 하는 <strong style="color:#dc2626">강제적 지침</strong></p>
+<div id="policy-sections"></div>
+</div>
+
+<div class="footer">📋 퍼플스 인트라넷 리뉴얼 · 아키텍처 분석 보고서 · 2026-04-24</div>
+</div>
+
+<script>
+var sections = [
+  {id:'analysis',icon:'🔴',name:'현황 분석 및 개선 비교',desc:'문제점 진단 + AS-IS → TO-BE 개선 비교'},
+  {id:'arch',icon:'📊',name:'시스템 아키텍처',desc:'4계층 아키텍처 구조 설계'},
+  {id:'flowcharts',icon:'🔀',name:'플로우차트',desc:'업무 프로세스 + 상태 라이프사이클 11종'},
+  {id:'menu-structure',icon:'📋',name:'메뉴구조도',desc:'2/3/4 Depth 계층 + 개발코드'},
+  {id:'permissions',icon:'🔐',name:'권한 매트릭스',desc:'7개 역할 × 15개 메뉴 접근 권한'},
+  {id:'apis',icon:'🔗',name:'5대 핵심 API',desc:'스크래핑·안심번호·웹훅·알림·전자계약'},
+  {id:'rules',icon:'⚙️',name:'자동화 규칙 및 알림',desc:'18개 자동화 규칙 + 알림 채널 명세'},
+  {id:'policy',icon:'📜',name:'정책 설계서',desc:'개인정보 보안 · DB 관리 · 36개 상태 전환 · 룰 엔진 정책'}
+];
+function fcZoom(btn, dir) {
+  var wrap = btn.closest('.fc-wrap');
+  var merm = wrap.querySelector('.mermaid');
+  var label = wrap.querySelector('.fc-zoom span');
+  var cur = parseFloat(merm.dataset.zoom || 1);
+  if (dir === 0) cur = 1;
+  else cur = Math.min(2, Math.max(0.3, cur + dir * 0.1));
+  merm.dataset.zoom = cur;
+  merm.style.transform = 'scale(' + cur + ')';
+  label.textContent = Math.round(cur * 100) + '%';
+}
+var hg = document.getElementById('home-grid');
+sections.forEach(function(s) {
+  var d = document.createElement('div');
+  d.className = 'home-card';
+  d.innerHTML = '<div class="icon">' + s.icon + '</div><div class="name">' + s.name + '</div><div class="desc">' + s.desc + '</div><div class="arrow">→</div>';
+  d.onclick = function() { go(s.id); };
+  hg.appendChild(d);
+});
+
+function go(id) {
+  document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+  var target = document.getElementById('page-' + id);
+  if (target) target.classList.add('active');
+  window.scrollTo(0, 0);
+  location.hash = id;
+  if (id === 'flowcharts' || id === 'menu-structure') {
+    setTimeout(function() {
+      var els = target.querySelectorAll('.mermaid:not([data-processed])');
+      if (els.length) mermaid.run({nodes: els});
+    }, 100);
+  }
+}
+window.addEventListener('load', function() {
+  var h = location.hash.replace('#','');
+  if (h && h !== 'home') go(h); else go('home');
+});
+
+// 문제점 (테이블)
+var pbody = document.getElementById('problems-body');
+var pno = 1;
+ANALYSIS.problems.forEach(function(cat) {
+  cat.items.forEach(function(item) {
+    var cls = item.severity === 'critical' ? 'b-r' : item.severity === 'high' ? 'b-y' : 'b-b';
+    var h = '<tr>';
+    h += '<td style="text-align:center;font-weight:700;color:#94a3b8">' + pno + '</td>';
+    h += '<td style="font-weight:600;color:#1e293b">' + cat.category + '</td>';
+    h += '<td><span class="b ' + cls + '">' + item.severity.toUpperCase() + '</span></td>';
+    h += '<td style="font-weight:600;color:#334155">' + item.title + '</td>';
+    h += '<td style="font-size:12px;color:#64748b">' + item.desc + '</td>';
+    h += '</tr>';
+    pbody.innerHTML += h;
+    pno++;
+  });
+});
+
+// 메뉴구조도
+var sb = document.getElementById('structure-body');
+ANALYSIS.menuStructure.forEach(function(row) {
+  var h = '<tr>';
+  h += '<td style="text-align:center;font-family:monospace;font-size:11px;color:#4f46e5;font-weight:600">' + row.code + '</td>';
+  h += row.depth2 ? '<td style="font-weight:700;color:#1e293b;border-top:2px solid #eef2ff">' + row.depth2 + '</td>' : '<td></td>';
+  h += '<td style="font-weight:600;color:#334155">' + row.depth3 + '</td>';
+  h += '<td style="font-size:12px;color:#64748b">' + row.depth4 + '</td></tr>';
+  sb.innerHTML += h;
+});
+
+// 권한 매트릭스
+var ph = document.getElementById('perm-head');
+var pb = document.getElementById('perm-body');
+var hdr = '<tr><th style="width:140px">메뉴</th>';
+ANALYSIS.roles.forEach(function(r) { hdr += '<th style="text-align:center;width:70px">' + r + '</th>'; });
+ph.innerHTML = hdr + '</tr>';
+ANALYSIS.permissions.forEach(function(p) {
+  var isSub = p.menu.indexOf('┗') === 0;
+  var h = '<tr><td style="font-weight:' + (isSub?'400':'700') + ';color:' + (isSub?'#94a3b8':'#1e293b') + ';padding-left:' + (isSub?'20':'12') + 'px">' + p.menu + '</td>';
+  p.access.forEach(function(a) {
+    var color = a==='●'?'#059669':a==='△'?'#d97706':a==='○'?'#4f46e5':'#cbd5e1';
+    h += '<td style="text-align:center;font-size:16px;color:'+color+'">'+a+'</td>';
+  });
+  pb.innerHTML += h + '</tr>';
+});
+
+// API
+var aa = document.getElementById('apis-area');
+ANALYSIS.apis.forEach(function(api) {
+  var pcls = api.priority==='Critical'?'b-r':'b-y';
+  var h = '<div class="c" style="margin-bottom:20px">';
+  h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
+  h += '<h3 style="margin:0;font-size:16px">'+api.icon+' '+api.id+'. '+api.name+'</h3>';
+  h += '<span class="b '+pcls+'">'+api.priority+'</span></div>';
+  h += '<p style="font-size:13px;color:#64748b;margin-bottom:12px">'+api.desc+'</p>';
+  h += '<div style="margin-bottom:12px"><strong style="font-size:12px;color:#4f46e5">📌 주요 기능</strong><ul style="margin-top:4px">';
+  api.features.forEach(function(f){h+='<li style="font-size:12px">'+f+'</li>';});
+  h += '</ul></div>';
+  h += '<div style="margin-bottom:12px"><strong style="font-size:12px;color:#4f46e5">🔄 연동 플로우</strong><div class="flow" style="margin-top:6px">';
+  api.flow.forEach(function(step,i){
+    h+='<div class="flow-step">'+step+'</div>';
+    if(i<api.flow.length-1) h+='<span class="flow-arrow">→</span>';
+  });
+  h+='</div></div>';
+  h+='<div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;padding:10px;font-size:12px;margin-bottom:12px">';
+  h+='<strong style="color:#059669">💡 연동 효과:</strong> <span style="color:#047857">'+api.effect+'</span></div>';
+  if(api.docs&&api.docs.length>0){
+    h+='<div style="margin-bottom:12px"><strong style="font-size:12px;color:#4f46e5">📄 서류별 API 연동</strong>';
+    h+='<table style="margin-top:6px"><tr><th>서류명</th><th>연동 기관</th><th>방식</th></tr>';
+    api.docs.forEach(function(d){h+='<tr><td>'+d.name+'</td><td>'+d.api+'</td><td><span class="b '+(d.method.indexOf('스크래핑')>=0?'b-p':d.method==='API'?'b-g':'b-y')+'">'+d.method+'</span></td></tr>';});
+    h+='</table></div>';
+  }
+  h+='<div><strong style="font-size:12px;color:#4f46e5">🛠️ 기술 스택</strong><ul style="margin-top:4px">';
+  api.techStack.forEach(function(t){h+='<li style="font-size:12px">'+t+'</li>';});
+  h+='</ul></div></div>';
+  aa.innerHTML+=h;
+});
+
+// 개선 비교표
+var ib = document.getElementById('improve-body');
+ANALYSIS.improvements.forEach(function(imp,i){
+  var pcls=imp.priority==='Critical'?'b-r':imp.priority==='High'?'b-y':'b-b';
+  var h='<tr><td style="text-align:center;font-weight:700;color:#94a3b8">'+(i+1)+'</td>';
+  h+='<td style="font-weight:700;color:#1e293b">'+imp.area+'</td>';
+  h+='<td style="font-size:12px">'+(imp.dept||'-')+'</td>';
+  h+='<td><span class="b '+pcls+'">'+(imp.priority||'-')+'</span></td>';
+  h+='<td style="font-size:12px;color:#dc2626">'+imp.before+'</td>';
+  h+='<td style="font-size:12px;color:#059669">'+imp.after+'</td>';
+  h+='<td style="font-size:12px;color:#4f46e5">'+imp.impact+'</td></tr>';
+  ib.innerHTML+=h;
+});
+
+// 정책 설계서
+var ps = document.getElementById('policy-sections');
+ANALYSIS.policy.sections.forEach(function(sec) {
+  var h = '<div class="c" style="margin-bottom:16px"><h3 style="font-size:15px;color:#1e293b;margin-bottom:10px">' + sec.title + '</h3>';
+  if (sec.content) h += '<p style="font-size:13px;color:#475569">' + sec.content + '</p>';
+  if (sec.items) {
+    sec.items.forEach(function(item) {
+      h += '<div style="margin:10px 0 6px"><strong style="font-size:13px;color:#4f46e5">' + item.sub + '</strong>';
+      if (item.note) h += '<p style="font-size:11px;color:#dc2626;margin:4px 0;font-style:italic">' + item.note + '</p>';
+      if (item.points) {
+        h += '<ul style="margin-top:4px">';
+        item.points.forEach(function(p) { h += '<li style="font-size:12px;color:#475569">' + p + '</li>'; });
+        h += '</ul>';
+      }
+      if (item.table) {
+        h += '<div style="overflow-x:auto;margin-top:6px"><table><thead><tr>';
+        item.table.headers.forEach(function(th){ h += '<th style="font-size:12px">' + th + '</th>'; });
+        h += '</tr></thead><tbody>';
+        item.table.rows.forEach(function(row){
+          h += '<tr>';
+          row.forEach(function(td,i){ h += '<td style="font-size:12px;color:' + (i===0?'#1e293b;font-weight:600':'#475569') + '">' + td + '</td>'; });
+          h += '</tr>';
+        });
+        h += '</tbody></table></div>';
+      }
+      if (item.statusRulesRef) {
+        var rules = ANALYSIS.policy.statusRules;
+        // Split by memberType
+        var junRules = rules.filter(function(r){return r.memberType==='준회원';});
+        var jungRules = rules.filter(function(r){return r.memberType==='정회원';});
+        function renderGroup(label, color, bgHead, data) {
+          var out = '<div style="margin-top:12px"><div style="background:'+bgHead+';color:#fff;padding:8px 16px;border-radius:8px 8px 0 0;font-weight:700;font-size:13px">'+label+' ('+data.length+'개 상태)</div>';
+          out += '<div style="overflow-x:auto"><table style="border-top:none">';
+          out += '<thead><tr><th style="width:70px">대분류</th><th style="width:100px">소분류(상태)</th><th>설명</th><th style="background:#eef2ff">상태시작</th><th style="background:#eef2ff">상태유지</th><th style="background:#eef2ff">상태종료</th><th style="width:70px;background:#f0fdf4">담당부서</th><th style="background:#fce7f3;width:140px">⚙️ 자동화 룰(To-Be)</th></tr></thead><tbody>';
+          // Count rowspan per phase
+          var phaseCount = {};
+          data.forEach(function(r){ phaseCount[r.phase] = (phaseCount[r.phase]||0)+1; });
+          var phaseRendered = {};
+          data.forEach(function(r){
+            var endDisplay = r.endTrans || '-';
+            // Determine dept
+            var dept = '-';
+            if (r.startBy && r.startBy !== '-') dept = r.startBy;
+            if (r.endBy && r.endBy !== '-' && r.endBy !== r.startBy) dept = dept !== '-' ? dept+'/'+r.endBy : r.endBy;
+            dept = dept.replace(/팀$/,'');
+            out += '<tr>';
+            // Phase cell with rowspan
+            if (!phaseRendered[r.phase]) {
+              out += '<td rowspan="'+phaseCount[r.phase]+'" style="font-weight:700;color:'+color+';font-size:12px;text-align:center;vertical-align:middle;background:rgba(99,102,241,0.05);border-right:2px solid '+color+'">'+r.phase+'</td>';
+              phaseRendered[r.phase] = true;
+            }
+            out += '<td style="font-weight:700;color:#1e293b;white-space:nowrap">'+r.status+'</td>';
+            out += '<td style="font-size:11px;color:#475569">'+r.desc+'</td>';
+            out += '<td style="font-size:11px;color:#334155">'+r.startCond+'</td>';
+            out += '<td style="font-size:11px;color:#334155">'+r.maintenance+'</td>';
+            out += '<td style="font-size:11px;color:#1e40af;font-weight:600">'+endDisplay+'</td>';
+            out += '<td style="font-size:11px;color:#059669;font-weight:600;text-align:center">'+dept+'</td>';
+            var rv = r.rule || '-';
+            if (rv !== '-') { out += '<td style="font-size:10px;text-align:center"><span style="background:#fce7f3;color:#be185d;padding:2px 6px;border-radius:4px;font-weight:600;white-space:nowrap">'+rv+'</span></td>'; }
+            else { out += '<td style="font-size:11px;text-align:center;color:#94a3b8">-</td>'; }
+            out += '</tr>';
+          });
+          out += '</tbody></table></div></div>';
+          return out;
+        }
+        h += renderGroup('📋 준회원 상태','#ca8a04','#a16207',junRules);
+        h += renderGroup('📋 정회원 상태','#4f46e5','#312e81',jungRules);
+      }
+      h += '</div>';
+    });
+  }
+  if (sec.steps) {
+    h += '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">';
+    sec.steps.forEach(function(s,i) {
+      h += '<div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;padding:8px 14px;font-size:12px"><strong style="color:#4f46e5">' + (i+1) + '.</strong> ' + s + '</div>';
+    });
+    h += '</div>';
+  }
+  h += '</div>';
+  ps.innerHTML += h;
+});
+
+
+// 룰 엔진 명세
+var rb = document.getElementById('rules-body');
+ANALYSIS.ruleEngine.forEach(function(r) {
+  var pcls = r.priority==='Critical'?'b-r':r.priority==='High'?'b-y':'b-b';
+  var h = '<tr>';
+  h += '<td style="text-align:center;font-family:monospace;font-size:11px;color:#4f46e5;font-weight:600">' + r.id + '</td>';
+  h += '<td style="font-weight:600;color:#1e293b">' + r.domain + '</td>';
+  h += '<td><span class="b ' + pcls + '">' + r.priority + '</span></td>';
+  h += '<td style="font-size:12px;color:#334155;font-weight:500">' + r.trigger + '</td>';
+  h += '<td style="font-size:12px;color:#059669;font-weight:500">' + r.action + '</td>';
+  h += '<td style="font-size:12px;color:#64748b">' + r.notify + '</td>';
+  h += '<td style="text-align:center;font-family:monospace;font-size:11px;color:#4f46e5">' + r.menu + '</td>';
+  h += '</tr>';
+  rb.innerHTML += h;
+});
+
+var fcMap = {
+  'fc-main':ANALYSIS.flowcharts.main,'fc-membership':ANALYSIS.flowcharts.membership,
+  'fc-payment':ANALYSIS.flowcharts.payment,'fc-cert':ANALYSIS.flowcharts.certification,
+  'fc-matching':ANALYSIS.flowcharts.matching,'fc-claim':ANALYSIS.flowcharts.claim,
+  'fc-distribute':ANALYSIS.flowcharts.distribute,'fc-hr':ANALYSIS.flowcharts.hrPerformance,
+  'fc-stats':ANALYSIS.flowcharts.statistics,'fc-status-assoc':ANALYSIS.flowcharts.statusAssociate,
+  'fc-status-regular':ANALYSIS.flowcharts.statusRegular,
+  'fc-menu-tree':ANALYSIS.flowcharts.menuTree
+};
+Object.keys(fcMap).forEach(function(id){
+  var el=document.getElementById(id);
+  if(el) el.textContent=fcMap[id];
+});
+</script>
+</body>
+</html>
