@@ -58,13 +58,68 @@ ul{padding-left:18px;margin:6px 0}li{margin:3px 0;font-size:13px;color:#475569}
 .fc-zoom button{width:32px;height:32px;border:1px solid #e2e8f0;background:#fff;border-radius:6px;font-size:16px;font-weight:700;color:#4f46e5;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center}
 .fc-zoom button:hover{background:#eef2ff;border-color:#4f46e5}
 .fc-zoom span{font-size:12px;color:#64748b;line-height:32px;min-width:40px;text-align:center}
+.print-btn{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;color:#4f46e5;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
+.print-btn:hover{background:#eef2ff;border-color:#4f46e5}
+.print-btn.header-print{margin-left:12px}
+/* ========== 인쇄 전용 스타일 ========== */
+@media print {
+  /* 기본 리셋 */
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
+  body{background:#fff!important;font-size:11px!important;line-height:1.5!important}
+  /* 숨길 요소 */
+  .back-btn,.print-btn,.fc-zoom,.home-card .arrow,.footer,.header-print,#page-home{display:none!important}
+  /* 헤더 */
+  .header{border-bottom:2px solid #1e293b!important;margin-bottom:16px!important;padding:12px 0!important}
+  .header .inner{padding:0!important}
+  .logo{font-size:18px!important}
+  .header-sub{font-size:11px!important}
+  /* 컨테이너 */
+  .ct{max-width:100%!important;padding:0!important}
+  /* 모든 활성 페이지 표시 */
+  .page.active{display:block!important}
+  .page:not(.active){display:none!important}
+  /* 페이지 바 */
+  .page-bar{margin-bottom:12px!important;border-bottom:1px solid #ccc!important;padding-bottom:8px!important}
+  .page-title{font-size:16px!important}
+  /* 카드 */
+  .c{border:1px solid #ddd!important;border-radius:6px!important;padding:12px!important;margin-bottom:10px!important;page-break-inside:avoid}
+  /* 테이블 */
+  table{font-size:10px!important;page-break-inside:auto}
+  th{background:#f1f5f9!important;padding:6px 8px!important;font-size:10px!important}
+  td{padding:6px 8px!important;font-size:10px!important;border-bottom:1px solid #ddd!important}
+  tr{page-break-inside:avoid}
+  /* 뱃지 */
+  .b{padding:1px 6px!important;font-size:9px!important}
+  /* 제목 */
+  h2{font-size:14px!important;margin:16px 0 8px!important;page-break-after:avoid}
+  h3{font-size:12px!important;margin:8px 0 4px!important;page-break-after:avoid}
+  /* 정책 설계서 섹션 */
+  .c h3{page-break-after:avoid}
+  .c ul,.c table,.c p{page-break-before:avoid}
+  /* 플로우차트 래퍼 */
+  .fc-wrap{padding:12px!important;margin-bottom:12px!important;page-break-inside:avoid;overflow:visible!important}
+  .fc-wrap .mermaid{min-width:auto!important;transform:scale(0.65)!important;transform-origin:top left!important}
+  .fc-section-title{font-size:13px!important;margin:16px 0 8px!important;padding:6px 10px!important;page-break-after:avoid}
+  /* 리스트 */
+  ul{margin:4px 0!important}li{font-size:11px!important;margin:2px 0!important}
+  /* Flow 스텝 */
+  .flow-step{padding:4px 8px!important;font-size:10px!important}
+  .flow-arrow{font-size:14px!important}
+  /* 알림 채널 카드 */
+  .c[style*="text-align:center"]{page-break-inside:avoid}
+  /* 인쇄 전용 페이지 브레이크 */
+  .print-page-break{page-break-before:always}
+}
 </style>
 </head>
 <body>
 <script src="analysis-data.js"></script>
 <div class="header"><div class="inner">
 <div class="logo">🏗️ <span>퍼플스 인트라넷</span> 아키텍처 분석</div>
+<div style="display:flex;align-items:center;gap:8px">
 <div class="header-sub">2026-04-24 · 보고용 문서</div>
+<button class="print-btn header-print" onclick="printPage()" title="현재 페이지 인쇄">🖨️ 인쇄</button>
+</div>
 </div></div>
 <div class="ct">
 
@@ -75,7 +130,7 @@ ul{padding-left:18px;margin:6px 0}li{margin:3px 0;font-size:13px;color:#475569}
 
 <!-- 문제점 + 개선비교 통합 -->
 <div class="page" id="page-analysis">
-<div class="page-bar"><button class="back-btn" onclick="go('home')">← 목록</button><span class="page-title">🔴 현황 분석 및 개선 비교</span></div>
+<div class="page-bar"><button class="back-btn" onclick="go('home')">← 목록</button><span class="page-title">🔴 현황 분석 및 개선 비교</span><button class="print-btn" onclick="printPage()" style="margin-left:auto">🖨️ 인쇄</button></div>
 <h2>현재 인트라넷 문제점</h2>
 <div class="c" style="overflow-x:auto"><table>
 <thead><tr><th style="width:30px">No</th><th style="width:100px">분류</th><th style="width:60px">심각도</th><th style="width:180px">문제점</th><th>상세 설명</th></tr></thead>
@@ -90,7 +145,7 @@ ul{padding-left:18px;margin:6px 0}li{margin:3px 0;font-size:13px;color:#475569}
 
 <!-- 아키텍처 -->
 <div class="page" id="page-arch">
-<div class="page-bar"><button class="back-btn" onclick="go('home')">← 목록</button><span class="page-title">📊 시스템 아키텍처 4계층</span></div>
+<div class="page-bar"><button class="back-btn" onclick="go('home')">← 목록</button><span class="page-title">📊 시스템 아키텍처 4계층</span><button class="print-btn" onclick="printPage()" style="margin-left:auto">🖨️ 인쇄</button></div>
 
 <div style="max-width:960px;margin:0 auto">
 <!-- Layer 1: Presentation -->
@@ -168,7 +223,7 @@ ul{padding-left:18px;margin:6px 0}li{margin:3px 0;font-size:13px;color:#475569}
 
 <!-- 플로우차트 -->
 <div class="page" id="page-flowcharts">
-<div class="page-bar"><button class="back-btn" onclick="go('home')">← 목록</button><span class="page-title">🔀 전체 시스템 플로우차트</span></div>
+<div class="page-bar"><button class="back-btn" onclick="go('home')">← 목록</button><span class="page-title">🔀 전체 시스템 플로우차트</span><button class="print-btn" onclick="printPage()" style="margin-left:auto">🖨️ 인쇄</button></div>
 
 <div class="fc-section-title">🗺️ 전체 업무 플로우 (End-to-End)</div>
 <div class="fc-wrap"><div class="fc-zoom"><button onclick="fcZoom(this,-1)">−</button><span>100%</span><button onclick="fcZoom(this,1)">+</button><button onclick="fcZoom(this,0)">↺</button></div><div id="fc-main" class="mermaid" style="min-width:2000px"></div></div>
@@ -190,7 +245,7 @@ ul{padding-left:18px;margin:6px 0}li{margin:3px 0;font-size:13px;color:#475569}
 
 <!-- 메뉴구조도 -->
 <div class="page" id="page-menu-structure">
-<div class="page-bar"><button class="back-btn" onclick="go('home')">← 목록</button><span class="page-title">📋 메뉴구조도 (Depth 계층)</span></div>
+<div class="page-bar"><button class="back-btn" onclick="go('home')">← 목록</button><span class="page-title">📋 메뉴구조도 (Depth 계층)</span><button class="print-btn" onclick="printPage()" style="margin-left:auto">🖨️ 인쇄</button></div>
 
 <div class="fc-section-title">🗂️ 조직도형 메뉴 트리</div>
 <div class="fc-wrap"><div class="fc-zoom"><button onclick="fcZoom(this,-1)">−</button><span>100%</span><button onclick="fcZoom(this,1)">+</button><button onclick="fcZoom(this,0)">↺</button></div><div id="fc-menu-tree" class="mermaid" style="min-width:1200px"></div></div>
@@ -204,7 +259,7 @@ ul{padding-left:18px;margin:6px 0}li{margin:3px 0;font-size:13px;color:#475569}
 
 <!-- 권한 매트릭스 -->
 <div class="page" id="page-permissions">
-<div class="page-bar"><button class="back-btn" onclick="go('home')">← 목록</button><span class="page-title">🔐 역할별 권한 매트릭스</span></div>
+<div class="page-bar"><button class="back-btn" onclick="go('home')">← 목록</button><span class="page-title">🔐 역할별 권한 매트릭스</span><button class="print-btn" onclick="printPage()" style="margin-left:auto">🖨️ 인쇄</button></div>
 <p style="font-size:12px;color:#64748b;margin-bottom:8px">● 전체 권한 &nbsp;&nbsp; △ 제한적 권한 &nbsp;&nbsp; ○ 조회만 &nbsp;&nbsp; ✕ 접근 불가</p>
 <div class="c" style="overflow-x:auto"><table>
 <thead id="perm-head"></thead>
@@ -214,14 +269,14 @@ ul{padding-left:18px;margin:6px 0}li{margin:3px 0;font-size:13px;color:#475569}
 
 <!-- 5대 API -->
 <div class="page" id="page-apis">
-<div class="page-bar"><button class="back-btn" onclick="go('home')">← 목록</button><span class="page-title">🔗 5대 핵심 API 연동 전략</span></div>
+<div class="page-bar"><button class="back-btn" onclick="go('home')">← 목록</button><span class="page-title">🔗 5대 핵심 API 연동 전략</span><button class="print-btn" onclick="printPage()" style="margin-left:auto">🖨️ 인쇄</button></div>
 <p style="font-size:13px;color:#64748b;margin-bottom:16px"><strong style="color:#4f46e5">룰 엔진 기반 자동화</strong> · <strong style="color:#4f46e5">개인정보 보안</strong> · <strong style="color:#4f46e5">데이터 일원화</strong></p>
 <div id="apis-area"></div>
 </div>
 
 <!-- 자동화 규칙 및 알림 -->
 <div class="page" id="page-rules">
-<div class="page-bar"><button class="back-btn" onclick="go('home')">← 목록</button><span class="page-title">⚙️ 자동화 규칙 및 알림 명세</span></div>
+<div class="page-bar"><button class="back-btn" onclick="go('home')">← 목록</button><span class="page-title">⚙️ 자동화 규칙 및 알림 명세</span><button class="print-btn" onclick="printPage()" style="margin-left:auto">🖨️ 인쇄</button></div>
 <p style="font-size:13px;color:#64748b;margin-bottom:16px">조건 충족 시 <strong style="color:#4f46e5">상태 변경 + 업무 처리 + 알림 발송</strong>이 자동으로 실행됩니다.</p>
 
 <h2>📡 알림 채널</h2>
@@ -241,8 +296,8 @@ ul{padding-left:18px;margin:6px 0}li{margin:3px 0;font-size:13px;color:#475569}
 
 <!-- 정책 설계서 -->
 <div class="page" id="page-policy">
-<div class="page-bar"><button class="back-btn" onclick="go('home')">← 목록</button><span class="page-title">📜 정책 설계서 (개인정보 보안 및 DB 관리)</span></div>
-<p style="font-size:13px;color:#64748b;margin-bottom:20px">개인정보보호법 및 결혼중개업법 준수 · 모든 개발자와 운영진이 즉시 이행해야 하는 <strong style="color:#dc2626">강제적 지침</strong></p>
+<div class="page-bar"><button class="back-btn" onclick="go('home')">← 목록</button><span class="page-title">📜 정책 설계서 (개인정보 보안 및 DB 관리)</span><button class="print-btn" onclick="printPage()" style="margin-left:auto">🖨️ 인쇄</button></div>
+<p style="font-size:13px;color:#64748b;margin-bottom:20px;line-height:1.8;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px 16px"><strong style="color:#d97706">📋 [안내]</strong> 본 문서는 확정본이 아닌 <strong style="color:#b45309">'정책 기획 초안'</strong>입니다.<br>본 문서에 기재된 모든 시스템 정책과 운영 룰(기준일, 제한 조건 등)은 현재 시스템의 뼈대를 잡기 위한 예시 및 기본 가이드라인입니다. 각 부서 및 실무자 분들의 현장 의견을 적극적으로 수렴하고 조율하여 최종 확정될 예정이오니, 많은 피드백 부탁드립니다.</p>
 <div id="policy-sections"></div>
 </div>
 
@@ -258,8 +313,21 @@ var sections = [
   {id:'permissions',icon:'🔐',name:'권한 매트릭스',desc:'7개 역할 × 15개 메뉴 접근 권한'},
   {id:'apis',icon:'🔗',name:'5대 핵심 API',desc:'스크래핑·안심번호·웹훅·알림·전자계약'},
   {id:'rules',icon:'⚙️',name:'자동화 규칙 및 알림',desc:'18개 자동화 규칙 + 알림 채널 명세'},
-  {id:'policy',icon:'📜',name:'정책 설계서',desc:'개인정보 보안 · DB 관리 · 36개 상태 전환 · 룰 엔진 정책'}
+  {id:'policy',icon:'📜',name:'정책 설계서',desc:'개인정보 보안 · DB 관리 · 36개 상태 전환 · 룰 엔진 · 회원분배 · 등급별 매칭 필터링 · 탈회 차단 정책'}
 ];
+function printPage() {
+  // 인쇄 전: 현재 페이지의 제목을 문서 타이틀에 반영
+  var activePage = document.querySelector('.page.active');
+  var originalTitle = document.title;
+  if (activePage) {
+    var titleEl = activePage.querySelector('.page-title');
+    if (titleEl) document.title = '퍼플스 인트라넷 — ' + titleEl.textContent.trim();
+  }
+  // 인쇄 실행
+  window.print();
+  // 인쇄 후 타이틀 복원
+  document.title = originalTitle;
+}
 function fcZoom(btn, dir) {
   var wrap = btn.closest('.fc-wrap');
   var merm = wrap.querySelector('.mermaid');
